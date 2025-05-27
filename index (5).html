@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>카드 겜블 게임</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #222;
+      color: #fff;
+      text-align: center;
+      padding: 50px;
+    }
+
+    .game {
+      background: #333;
+      padding: 20px;
+      border-radius: 15px;
+      display: inline-block;
+      width: 350px;
+    }
+
+    input {
+      padding: 10px;
+      margin: 10px;
+      border: none;
+      border-radius: 8px;
+      width: 150px;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: gold;
+      border: none;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 5px;
+      font-size: 16px;
+    }
+
+    .result {
+      margin-top: 20px;
+      font-size: 18px;
+      min-height: 40px;
+    }
+
+    .card-area {
+      display: flex;
+      justify-content: space-around;
+      margin: 20px 0;
+    }
+
+    .card {
+      width: 80px;
+      height: 120px;
+      background: white;
+      color: black;
+      border-radius: 10px;
+      font-size: 28px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="game">
+    <h1>🃏 카드 겜블 게임</h1>
+    <p>잔액: <span id="balance">1000</span>원</p>
+
+    <input type="number" id="bet" placeholder="배팅 금액 입력" min="1" />
+    <button onclick="playRound()">뽑기!</button>
+    <button onclick="resetGame()">다시하기 🔁</button>
+
+    <div class="result">
+      <div class="card-area">
+        <div>
+          <p>👤 당신의 카드</p>
+          <div id="playerCard" class="card">-</div>
+        </div>
+        <div>
+          <p>🤖 딜러의 카드</p>
+          <div id="dealerCard" class="card">-</div>
+        </div>
+      </div>
+      <p id="outcome"></p>
+    </div>
+  </div>
+
+  <script>
+    let balance = 1000;
+    let winStreak = 0;
+
+    function drawCard() {
+      const cards = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+      const suits = ["♠", "♥", "♣", "♦"];
+      const value = cards[Math.floor(Math.random() * cards.length)];
+      const suit = suits[Math.floor(Math.random() * suits.length)];
+      return { value, suit };
+    }
+
+    function cardName(card) {
+      let name;
+      if (card.value === 11) name = "J";
+      else if (card.value === 12) name = "Q";
+      else if (card.value === 13) name = "K";
+      else if (card.value === 14) name = "A";
+      else name = card.value;
+      return name + card.suit;
+    }
+
+    function playRound() {
+      const bet = parseInt(document.getElementById("bet").value);
+      const balanceSpan = document.getElementById("balance");
+      const playerCardDiv = document.getElementById("playerCard");
+      const dealerCardDiv = document.getElementById("dealerCard");
+      const outcome = document.getElementById("outcome");
+
+      if (isNaN(bet) || bet <= 0 || bet > balance) {
+        alert("❌ 올바른 배팅 금액을 입력하세요.");
+        return;
+      }
+
+      const player = drawCard();
+      let dealer = drawCard();
+      if (dealer.value <= 7) dealer = drawCard();
+
+      playerCardDiv.textContent = cardName(player);
+      dealerCardDiv.textContent = cardName(dealer);
+
+      let resultText = "";
+      let color = "white";
+      let reward = 0;
+
+      if (player.value > dealer.value) {
+        reward = bet;
+        winStreak += 1;
+
+        const cardGap = player.value - dealer.value;
+
+        if (cardGap >= 8) {
+          reward *= 2;
+          resultText = `💥 카드 차이 ${cardGap}! 2배 보너스 포함 ${reward}원 획득!`;
+        } else if (winStreak >= 3) {
+          reward += Math.floor(bet * 0.5);
+          resultText = `🔥 ${winStreak}연승! 보너스 포함 ${reward}원 획득!`;
+        } else {
+          resultText = `🎉 승리! ${reward}원 획득!`;
+        }
+
+        balance += reward;
+        color = "lime";
+
+      } else if (player.value < dealer.value) {
+        balance -= bet;
+        winStreak = 0;
+        resultText = `😢 패배... ${bet}원 잃음.`;
+        color = "red";
+
+      } else {
+        reward = Math.floor(bet * 0.1);
+        balance += reward;
+        resultText = `⚖️ 무승부! ${reward}원 보너스 획득.`;
+        color = "yellow";
+      }
+
+      outcome.textContent = resultText;
+      outcome.style.color = color;
+      balanceSpan.textContent = balance;
+
+      if (balance <= 0) {
+        alert("💸 파산했습니다. '다시하기'로 재시작하세요!");
+      }
+    }
+
+    function resetGame() {
+      balance = 1000;
+      winStreak = 0;
+      document.getElementById("balance").textContent = balance;
+      document.getElementById("playerCard").textContent = "-";
+      document.getElementById("dealerCard").textContent = "-";
+      document.getElementById("outcome").textContent = "";
+      document.getElementById("bet").value = "";
+    }
+
+    // Enter키 눌렀을 때 배팅 실행
+    document.getElementById("bet").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        playRound();
+      }
+    });
+  </script>
+</body>
+</html>
